@@ -467,16 +467,19 @@ def call_llm_api(prompt: str) -> str:
     headers = {"Content-Type": "application/json"}
     
     if provider in ["deepseek", "openai"]:
-        url = f"{base_url if base_url else '[https://api.openai.com/v1](https://api.openai.com/v1)'}/chat/completions"
+        if provider == "deepseek":
+            url = f"{base_url if base_url else 'https://api.deepseek.com'}/chat/completions"
+        else:
+            url = f"{base_url if base_url else 'https://api.openai.com/v1'}/chat/completions"
         headers["Authorization"] = f"Bearer {api_key}"
         payload = {"model": model, "messages": [{"role": "user", "content": prompt}], "temperature": 0.0}
     elif provider == "anthropic":
-        url = f"{base_url if base_url else '[https://api.anthropic.com/v1](https://api.anthropic.com/v1)'}/messages"
+        url = f"{base_url if base_url else 'https://api.anthropic.com/v1'}/messages"
         headers["x-api-key"] = api_key
         headers["anthropic-version"] = "2023-06-01"
         payload = {"model": model, "max_tokens": 500, "messages": [{"role": "user", "content": prompt}]}
     elif provider == "gemini":
-        url = f"[https://generativelanguage.googleapis.com/v1beta/models/](https://generativelanguage.googleapis.com/v1beta/models/){model}:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
         payload = {"contents": [{"parts": [{"text": prompt}]}]}
     else:
         raise ValueError(f"Unsupported Provider: {provider}")
@@ -555,20 +558,9 @@ def test_collatz_sum_positive():
     assert collatz_sum([10, 20, 30]) == 60, "collatz_sum([10, 20, 30]) must be 60"
 """
     else:
-        tests = """
-def test_default_pass():
-    assert True
-"""
+        print(f"\n[-] No tailored test assertions available for arbitrary function '{func_name}'. Skipping execution.")
+        return
 
-    test_suite = f"from clean import {func_name}\n" + tests
-
-    with tempfile.NamedTemporaryFile(suffix="_test.py", mode="w+", encoding="utf-8", delete=False) as f:
-        f.write(test_suite)
-        test_path = f.name
-
-    print(f"\n[+] Running pytest on generated clean.py for '{func_name}'...")
-    res = subprocess.run([sys.executable, "-m", "pytest", test_path, "-v"], capture_output=True, text=True)
-    print(res.stdout)
 
 
 # ==============================================================================
@@ -599,21 +591,27 @@ def main():
     verified, log = verify_with_lean(hoas_graph, func_name)
     
     final_hoas = hoas_graph
+    iteration = 0
+    max_retries = 5
 
-    if not verified:
-        print(f"    [!] REJECTED BY LEAN KERNEL:")
-        print(f"    {log.strip()}")
+    while not verified and iteration < max_retries:
+        iteration += 1
+        print(f"\n[REPAIR-LOOP] Iteration {iteration}/{max_retries}:")
+        print(f"    [!] REJECTED BY LEAN KERNEL: {log.strip()}")
 
-        # 3. LLM Repair
-        repaired_hoas_str = llm_repair_category_graph(hoas_graph.to_hoas_str(), log)
-        final_hoas = parse_hoas_str(repaired_hoas_str, hoas_graph)
+        # LLM / Category Graph Repair
+        repaired_hoas_str = llm_repair_category_graph(final_hoas.to_hoas_str(), log)
+        final_hoas = parse_hoas_str(repaired_hoas_str, final_hoas)
 
-        # 4. Re-verify
-        verified_again, log_again = verify_with_lean(final_hoas, func_name)
-        print(f"\n[4] Re-verifying Corrected Category Graph in Lean 4:")
-        print(f"    Status: {log_again}")
+        # Re-verify
+        verified, log = verify_with_lean(final_hoas, func_name)
+        print(f"    Re-verification Status: {log.strip()}")
+        if verified:
+            print(f"    >>> CONVERGED at iteration {iteration}! All invariants verified.")
+            break
     else:
-        print(f"    [+] {log.strip()}")
+        if verified:
+            print(f"    [+] {log.strip()}")
 
     # 5. Output Clean Python
     repaired_ast = hoas_to_python_ast(final_hoas, func_name, param_info, return_type)

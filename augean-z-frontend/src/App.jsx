@@ -16,6 +16,8 @@ import ReconstructionScene from './components/ReconstructionScene';
 import FinalScene from './components/FinalScene';
 import PipelineModal from './components/PipelineModal';
 import DebuggerApp from './components/debugger/DebuggerApp';
+import AnalysisResultsPage from './components/AnalysisResultsPage';
+import InteractiveDotGrid from './components/InteractiveDotGrid';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -44,6 +46,11 @@ function LandingPage() {
     <div className="relative min-h-screen bg-[#030305] text-white selection:bg-purple-900 selection:text-purple-100 overflow-x-hidden">
       {/* Dynamic Background System with Canvas Particles & Atmospheric Vignette */}
       <BackgroundSystem />
+
+      {/* Physics-Based Cursor Force Dot Grid Layer (Full Screen, pointer-events: none) */}
+      <div className="fixed inset-0 pointer-events-none z-[12] overflow-hidden">
+        <InteractiveDotGrid />
+      </div>
 
       {/* Global Minimal Navigation */}
       <Navbar onOpenPipelineModal={() => setPipelineModalOpen(true)} />
@@ -102,6 +109,11 @@ export default function App() {
 
         {/* Route /app: Main Functional Debugger */}
         <Route path="/app" element={<DebuggerApp />} />
+
+        {/* Route /results: Detailed Code Error & Diagnostics Inspection */}
+        <Route path="/results" element={<AnalysisResultsPage />} />
+        <Route path="/analysis" element={<AnalysisResultsPage />} />
+        <Route path="/analysis-results" element={<AnalysisResultsPage />} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />

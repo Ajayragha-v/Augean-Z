@@ -86,11 +86,11 @@ export default function BackgroundSystem() {
 
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-      {/* Background canvas */}
+      {/* Background canvas for ambient dust particles */}
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
 
       {/* Subtle fine technical grid */}
-      <div className="absolute inset-0 bg-grid-tech opacity-40" />
+      <div className="absolute inset-0 bg-grid-tech opacity-25" />
 
       {/* Dark radial spotlight with very faint purple core */}
       <div className="absolute inset-0 bg-radial-vignette" />

@@ -136,9 +136,17 @@ export default function BreakScene() {
       tl.to(
         progressBadgeRef.current,
         {
-          innerText: 'SYSTEM DISASSEMBLED · READY FOR TOPOLOGY MAPPING',
           color: '#c77dff',
           duration: 0.2,
+          onUpdate: function () {
+            if (progressBadgeRef.current) {
+              const p = this.progress();
+              progressBadgeRef.current.textContent =
+                p > 0.5
+                  ? 'SYSTEM DISASSEMBLED · READY FOR TOPOLOGY MAPPING'
+                  : 'DISASSEMBLING LATTICE · READY FOR TOPOLOGY MAPPING';
+            }
+          },
         },
         0.75
       );

@@ -16,25 +16,33 @@ export default function ScrollProgress() {
   const [scrollPercent, setScrollPercent] = useState(0);
 
   useEffect(() => {
-    const handleScroll = () => {
-      const scrollY = window.scrollY;
-      const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const percent = totalHeight > 0 ? (scrollY / totalHeight) * 100 : 0;
-      setScrollPercent(Math.min(100, Math.max(0, percent)));
+    let ticking = false;
 
-      // Detect which section is currently in view
-      const elements = STAGES.map((s) => document.getElementById(s.id));
-      let current = 0;
-      for (let i = 0; i < elements.length; i++) {
-        const el = elements[i];
-        if (el) {
-          const rect = el.getBoundingClientRect();
-          if (rect.top <= window.innerHeight * 0.45) {
-            current = i;
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const scrollY = window.scrollY;
+          const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+          const percent = totalHeight > 0 ? (scrollY / totalHeight) * 100 : 0;
+          setScrollPercent(Math.min(100, Math.max(0, percent)));
+
+          // Detect which section is currently in view
+          const elements = STAGES.map((s) => document.getElementById(s.id));
+          let current = 0;
+          for (let i = 0; i < elements.length; i++) {
+            const el = elements[i];
+            if (el) {
+              const rect = el.getBoundingClientRect();
+              if (rect.top <= window.innerHeight * 0.45) {
+                current = i;
+              }
+            }
           }
-        }
+          setActiveStage(current);
+          ticking = false;
+        });
+        ticking = true;
       }
-      setActiveStage(current);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });

@@ -111,12 +111,27 @@ export default function StageInspector({
               )}
             </div>
 
-            {metrics?.status === 'PASSED' && (
+            {((metrics?.status === 'VERIFIED' || metrics?.status === 'PASSED') && (context?.testResults?.verified === true || metrics?.solved > 0) && ((context?.testResults?.tests?.passed || context?.testResults?.passed || metrics?.testsRun || 0) > 0) && (context?.testResults?.tests?.failed || context?.testResults?.failed || 0) === 0 && (context?.testResults?.tests?.errors || context?.testResults?.errors || 0) === 0) ? (
               <div className="mt-2 text-[10px] text-emerald-400 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                <span>🟢 GREEN FLAG: All 5 test assertions passed with zero structural invariant violations.</span>
+                <span>🟢 GREEN FLAG: All {context?.testResults?.tests?.passed ?? context?.testResults?.passed ?? metrics?.testsRun} dynamic test assertions passed with zero structural invariant violations.</span>
               </div>
-            )}
+            ) : metrics?.status === 'FAILED' ? (
+              <div className="mt-2 text-[10px] text-red-400 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-red-400" />
+                <span>🔴 VERIFICATION FAILED: {context?.testResults?.tests?.failed ?? context?.testResults?.failed ?? 1} test assertion(s) failed.</span>
+              </div>
+            ) : metrics?.status === 'ERROR' ? (
+              <div className="mt-2 text-[10px] text-amber-400 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-400" />
+                <span>⚠️ VERIFICATION ERROR: {context?.testResults?.error || context?.testResults?.message || 'Test execution could not complete.'}</span>
+              </div>
+            ) : metrics?.status === 'UNVERIFIED' ? (
+              <div className="mt-2 text-[10px] text-zinc-400 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-zinc-500" />
+                <span>⚪ UNVERIFIED: No meaningful executable test suite available for this routine.</span>
+              </div>
+            ) : null}
           </div>
         </div>
       )}

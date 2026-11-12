@@ -25,15 +25,25 @@ export default function BottomStatusBar({ metrics, isAnalyzing, currentStage }) 
 
         <div className="flex items-center gap-2">
           <span className="text-zinc-600">STATUS</span>
-          {status === 'PASSED' ? (
+          {status === 'VERIFIED' || status === 'PASSED' ? (
             <span className="text-emerald-400 flex items-center gap-1 font-semibold">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              ● PASSED
+              ● VERIFIED
             </span>
           ) : status === 'FAILED' ? (
             <span className="text-red-400 flex items-center gap-1 font-semibold">
               <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
               ✕ FAILED
+            </span>
+          ) : status === 'ERROR' ? (
+            <span className="text-amber-400 flex items-center gap-1 font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              ⚠ ERROR
+            </span>
+          ) : status === 'UNVERIFIED' ? (
+            <span className="text-zinc-400 flex items-center gap-1 font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
+              ○ UNVERIFIED
             </span>
           ) : isAnalyzing ? (
             <span className="text-purple-300 flex items-center gap-1">

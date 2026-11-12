@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Play, Upload, ArrowLeft, RotateCcw, AlertTriangle, Loader2, CheckCircle2 } from 'lucide-react';
+import { Play, Upload, ArrowLeft, RotateCcw, AlertTriangle, Loader2, CheckCircle2, ListTree, Sparkles, Info } from 'lucide-react';
 import CodeEditor from './CodeEditor';
 import BottomStatusBar from './BottomStatusBar';
 import {
@@ -18,6 +18,7 @@ export default function DebuggerApp() {
   const [fixedCode, setFixedCode] = useState(null);
   const [fileName, setFileName] = useState('lattice_closure.py');
   const [viewMode, setViewMode] = useState('editor'); // 'editor' | 'diff' | 'fixed'
+  const [lastAnalysis, setLastAnalysis] = useState(null);
 
   // Pipeline Execution State (operates behind the interface)
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -45,6 +46,7 @@ export default function DebuggerApp() {
       if (typeof content === 'string') {
         setCode(content);
         setFixedCode(null);
+        setLastAnalysis(null);
         setStageStatus('idle');
         setPipelineMetrics({
           problems: 3,
@@ -86,8 +88,11 @@ export default function DebuggerApp() {
         }
       );
 
-      // Analysis finished successfully
-      setStageStatus('completed');
+      // Analysis pipeline finished
+      const isVerified = result.metrics?.status === 'VERIFIED' || result.metrics?.status === 'PASSED';
+      const isUnverified = result.metrics?.status === 'UNVERIFIED';
+      setStageStatus(isVerified ? 'completed' : isUnverified ? 'unverified' : 'failed');
+      setLastAnalysis(result);
       if (result.fixedCode) {
         setFixedCode(result.fixedCode);
         setViewMode('diff'); // Automatically switch to side-by-side diff
@@ -104,6 +109,30 @@ export default function DebuggerApp() {
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  // Navigate to detailed Analysis Results Page
+  const handleViewAnalysis = () => {
+    navigate('/results', {
+      state: {
+        code,
+        fileName,
+        fixedCode: fixedCode || lastAnalysis?.fixedCode,
+        diagnostics: lastAnalysis?.diagnostics || [],
+        metrics: pipelineMetrics,
+        tokenUsage: lastAnalysis?.tokenUsage || null,
+        solutions: lastAnalysis?.solutions || [],
+        testResults: lastAnalysis?.testResults || null,
+        verified: lastAnalysis?.verified ?? (pipelineMetrics?.status === 'VERIFIED'),
+        leanLog: lastAnalysis?.leanLog || null,
+        error: lastAnalysis?.error || null,
+        iterations: lastAnalysis?.iterations || 1,
+        maxRetries: lastAnalysis?.maxRetries || 5,
+        converged: lastAnalysis?.converged ?? true,
+        repairHistory: lastAnalysis?.repairHistory || [],
+        remainingDiagnostics: lastAnalysis?.remainingDiagnostics || [],
+      },
+    });
   };
 
   // Apply fix directly into original code
@@ -156,7 +185,7 @@ export default function DebuggerApp() {
           </div>
         </div>
 
-        {/* Center: Ephemeral Pipeline State (Only visible while analyzing or on failure) */}
+        {/* Center: Ephemeral Pipeline State (Only visible while analyzing or on status update) */}
         <div className="flex items-center">
           {isAnalyzing && (
             <div className="flex items-center gap-2 px-3 py-1 rounded bg-purple-950/40 border border-purple-500/30 text-purple-200 font-mono text-[11px] animate-pulse">
@@ -166,10 +195,24 @@ export default function DebuggerApp() {
             </div>
           )}
 
-          {!isAnalyzing && stageStatus === 'failed' && (
+          {!isAnalyzing && stageStatus === 'completed' && (
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 font-mono text-[11px]">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+              <span>VERIFIED</span>
+            </div>
+          )}
+
+          {!isAnalyzing && (stageStatus === 'unverified' || pipelineMetrics?.status === 'UNVERIFIED') && (
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded bg-zinc-900/80 border border-white/[0.12] text-zinc-300 font-mono text-[11px]">
+              <Info className="w-3.5 h-3.5 text-zinc-400" />
+              <span>UNVERIFIED (NO TEST SUITE)</span>
+            </div>
+          )}
+
+          {!isAnalyzing && stageStatus === 'failed' && pipelineMetrics?.status !== 'UNVERIFIED' && (
             <div className="flex items-center gap-1.5 px-3 py-1 rounded bg-red-950/40 border border-red-500/40 text-red-300 font-mono text-[11px]">
               <AlertTriangle className="w-3.5 h-3.5 text-red-400" />
-              <span>VERIFICATION FAILED: LEAN</span>
+              <span>{simulateFailure ? 'VERIFICATION FAILED: LEAN' : pipelineMetrics?.status === 'ERROR' ? 'VERIFICATION ERROR' : 'TESTS FAILED'}</span>
             </div>
           )}
         </div>
@@ -214,6 +257,18 @@ export default function DebuggerApp() {
             <AlertTriangle className="w-3 h-3 text-red-400" />
             <span>Fail Test: {simulateFailure ? 'ON' : 'OFF'}</span>
           </button>
+
+          {/* View Analysis Results Button */}
+          {lastAnalysis && (
+            <button
+              onClick={handleViewAnalysis}
+              className="px-3 py-1.5 rounded bg-purple-950/70 hover:bg-purple-900 border border-purple-500/50 text-xs font-mono text-purple-200 hover:text-white flex items-center gap-1.5 transition-colors shadow-sm"
+              title="Inspect detected problems, code locations, and suggestions"
+            >
+              <ListTree className="w-3.5 h-3.5 text-purple-300" />
+              <span>View Analysis</span>
+            </button>
+          )}
 
           {/* Primary Action Button */}
           <button
